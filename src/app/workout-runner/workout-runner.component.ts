@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Router } from '@angular/router';
 import { WorkoutPlan, ExercisePlan, Exercise } from './model';
 
 @Component({
@@ -17,7 +18,7 @@ export class WorkoutRunnerComponent implements OnInit {
   exerciseTrackingInterval: number;
   workoutPaused: boolean;
 
-  constructor() {
+  constructor(private router: Router) {
   }
 
   ngOnInit() {
@@ -73,7 +74,7 @@ export class WorkoutRunnerComponent implements OnInit {
           }
           this.startExercise(next);
         } else {
-          console.log('Workout complete!');
+          this.router.navigate( ['/finish'] );
         }
         return;
       }
