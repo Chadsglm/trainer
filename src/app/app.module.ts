@@ -3,6 +3,8 @@ import { NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { WorkoutRunnerComponent } from './workout-runner/workout-runner.component';
+import { WorkoutRunnerModule } from './workout-runner/workout-runner.module';
 
 @NgModule({
   declarations: [
@@ -10,7 +12,8 @@ import { AppComponent } from './app.component';
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    WorkoutRunnerModule
   ],
   providers: [],
   bootstrap: [AppComponent]
