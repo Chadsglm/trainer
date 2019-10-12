@@ -5,10 +5,14 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { WorkoutRunnerComponent } from './workout-runner/workout-runner.component';
 import { WorkoutRunnerModule } from './workout-runner/workout-runner.module';
+import { StartComponent } from './start/start.component';
+import { FinishComponent } from './finish/finish.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    StartComponent,
+    FinishComponent
   ],
   imports: [
     BrowserModule,
