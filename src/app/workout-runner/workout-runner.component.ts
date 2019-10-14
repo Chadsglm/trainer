@@ -1,13 +1,16 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter, ViewEncapsulation } from '@angular/core';
 import { Router } from '@angular/router';
-import { WorkoutPlan, ExercisePlan, Exercise } from './model';
+
+import { WorkoutPlan, ExercisePlan, Exercise, ExerciseProgressEvent, ExerciseChangedEvent } from './model';
+import { WorkoutHistoryTrackerService } from '../core/workout-history-tracker.service';
+
 
 @Component({
   selector: 'app-workout-runner',
   templateUrl: './workout-runner.component.html',
   styles: []
 })
-export class WorkoutRunnerComponent implements OnInit {
+export class WorkoutRunnerComponent implements OnInit, OnDestroy {
 
   workoutPlan: WorkoutPlan;
   workoutTimeRemaining: number;
@@ -18,7 +21,21 @@ export class WorkoutRunnerComponent implements OnInit {
   exerciseTrackingInterval: number;
   workoutPaused: boolean;
 
-  constructor(private router: Router) {
+  @Output() exercisePaused: EventEmitter<number> = new EventEmitter<number>();
+  @Output() exerciseResumed: EventEmitter<number> = new EventEmitter<number>();
+  @Output() exerciseProgress: EventEmitter<ExerciseProgressEvent> = new EventEmitter<ExerciseProgressEvent>();
+  @Output() exerciseChanged: EventEmitter<ExerciseChangedEvent> = new EventEmitter<ExerciseChangedEvent>();
+  @Output() workoutStarted: EventEmitter<WorkoutPlan> = new EventEmitter<WorkoutPlan>();
+  @Output() workoutComplete: EventEmitter<WorkoutPlan> = new EventEmitter<WorkoutPlan>();
+
+  constructor(
+    private router: Router,
+    private tracker: WorkoutHistoryTrackerService) {
+  }
+
+  ngOnDestroy() {
+    if (this.exerciseTrackingInterval) { clearInterval(this.exerciseTrackingInterval); }
+    this.tracker.endTracking(false);
   }
 
   ngOnInit() {
@@ -28,19 +45,23 @@ export class WorkoutRunnerComponent implements OnInit {
   }
 
   start() {
+    this.tracker.startTracking();
     this.workoutTimeRemaining = this.workoutPlan.totalWorkoutDuration();
     this.currentExerciseIndex = 0;
     this.startExercise(this.workoutPlan.exercises[this.currentExerciseIndex]);
+    this.workoutStarted.emit(this.workoutPlan);
   }
 
   pause() {
     clearInterval(this.exerciseTrackingInterval);
     this.workoutPaused = true;
+    this.exercisePaused.emit(this.currentExerciseIndex);
   }
 
   resume() {
     this.startExerciseTimeTracking();
     this.workoutPaused = false;
+    this.exerciseResumed.emit(this.currentExerciseIndex);
   }
 
   pauseResumeToggle() {
@@ -52,7 +73,7 @@ export class WorkoutRunnerComponent implements OnInit {
   }
 
   onKeyPressed(event: KeyboardEvent) {
-    if (event.which === 80 || event.which === 112) { // 'p' or 'P' key to toggle pause and resume.
+    if (event.which === 80 || event.which === 112) {        // 'p' or 'P' key to toggle pause and resume.
       this.pauseResumeToggle();
     }
   }
@@ -67,19 +88,31 @@ export class WorkoutRunnerComponent implements OnInit {
     this.exerciseTrackingInterval = window.setInterval(() => {
       if (this.exerciseRunningDuration >= this.currentExercise.duration) {
         clearInterval(this.exerciseTrackingInterval);
+        if (this.currentExercise !== this.restExercise) {
+          this.tracker.exerciseComplete(this.workoutPlan.exercises[this.currentExerciseIndex]);
+        }
         const next: ExercisePlan = this.getNextExercise();
         if (next) {
           if (next !== this.restExercise) {
             this.currentExerciseIndex++;
           }
           this.startExercise(next);
+          this.exerciseChanged.emit(new ExerciseChangedEvent(next, this.getNextExercise()));
         } else {
-          this.router.navigate( ['/finish'] );
+          this.tracker.endTracking(true);
+          this.workoutComplete.emit(this.workoutPlan);
+          this.router.navigate(['/finish']);
         }
         return;
       }
       ++this.exerciseRunningDuration;
       --this.workoutTimeRemaining;
+      this.exerciseProgress.emit(new ExerciseProgressEvent(
+        this.currentExercise,
+        this.exerciseRunningDuration,
+        this.currentExercise.duration - this.exerciseRunningDuration,
+        this.workoutTimeRemaining
+      ));
     }, 1000);
   }
 
@@ -104,11 +137,11 @@ export class WorkoutRunnerComponent implements OnInit {
           'A jumping jack or star jump, also called side-straddle hop is a physical jumping exercise.',
           'JumpingJacks.png',
           'jumpingjacks.wav',
-          `Assume an erect position, with feet together and arms at your side.
-                            Slightly bend your knees, and propel yourself a few inches into the air.
-                            While in air, bring your legs out to the side about shoulder width or slightly wider.
+          `Assume an erect position, with feet together and arms at your side. <br>
+                            Slightly bend your knees, and propel yourself a few inches into the air. <br>
+                            While in air, bring your legs out to the side about shoulder width or slightly wider. <br>
                             As you are moving your legs outward, you should raise your arms up over your head; arms should be
-                            slightly bent throughout the entire in-air movement.
+                            slightly bent throughout the entire in-air movement. <br>
                             Your feet should land shoulder width or wider as your hands meet above your head with arms slightly bent`,
           ['dmYwZH_BNd0', 'BABOdJ-2Z6o', 'c4DAnQ6DtF8']),
         30));

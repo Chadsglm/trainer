@@ -7,17 +7,23 @@ import { WorkoutRunnerComponent } from './workout-runner/workout-runner.componen
 import { WorkoutRunnerModule } from './workout-runner/workout-runner.module';
 import { StartComponent } from './start/start.component';
 import { FinishComponent } from './finish/finish.component';
+import { CoreModule } from './core/core.module';
+import { WorkoutHistoryComponent } from './workout-history/workout-history.component';
+import { SharedModule } from './shared/shared.module';
 
 @NgModule({
   declarations: [
     AppComponent,
     StartComponent,
-    FinishComponent
+    FinishComponent,
+    WorkoutHistoryComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    WorkoutRunnerModule
+    WorkoutRunnerModule,
+    CoreModule,
+    SharedModule
   ],
   providers: [],
   bootstrap: [AppComponent]
